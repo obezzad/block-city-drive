@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Block City Drive</title>
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16213a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8ab4f8; }
+  body { font-family: 'Press Start 2P', monospace; color: #fff; user-select: none; -webkit-user-select: none; touch-action: none; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hidden { display: none !important; }
+
+  .mc-btn {
+    font-family: inherit; font-size: 12px; color: #e0e0e0; text-shadow: 2px 2px 0 #383838;
+    width: 400px; max-width: 86vw; padding: 12px 8px; margin: 5px auto; display: block; cursor: pointer;
+    background: #707070; border: 2px solid #000;
+    box-shadow: inset 2px 2px 0 #a9a9a9, inset -2px -3px 0 #4d4d4d;
+  }
+  .mc-btn:hover, .mc-btn:focus-visible { background: #7b84c7; color: #ffffa0; outline: none; box-shadow: inset 2px 2px 0 #bdc6ff, inset -2px -3px 0 #4f5794; }
+  .mc-btn:active { transform: translateY(1px); }
+  .row { display: flex; gap: 8px; width: 400px; max-width: 86vw; margin: 0 auto; }
+  .row .mc-btn { width: 50%; font-size: 9px; margin: 5px 0; padding: 11px 4px; }
+
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+  #menu { background: linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.5)); }
+  .logo { font-size: clamp(28px, 7vw, 64px); letter-spacing: 3px; color: #d9d9d9; line-height: 1.15; text-align: center; margin-bottom: 22px;
+    text-shadow: 0 4px 0 #8b8b8b, 0 8px 0 #5a5a5a, 0 12px 0 #2b2b2b, 8px 16px 0 rgba(0,0,0,0.35); }
+  .logo span { color: #ffd23f; text-shadow: 0 4px 0 #c28f10, 0 8px 0 #8a5f08, 0 12px 0 #4a3004, 8px 16px 0 rgba(0,0,0,0.35); }
+  .label { font-size: 10px; margin: 8px 0 8px; color: #ddd; text-shadow: 2px 2px 0 #3f3f3f; }
+  #cars { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; justify-content: center; max-width: 94vw; }
+  .car { width: 124px; padding: 8px 4px; text-align: center; cursor: pointer; background: rgba(0,0,0,0.45); border: 3px solid #555; font-size: 8px; color: #ccc; line-height: 1.7; }
+  .car b { display: block; color: #fff; font-weight: normal; font-size: 9px; margin-bottom: 3px; }
+  .car.sel { border-color: #fff; color: #ffff60; background: rgba(0,0,0,0.65); }
+  #colors { display: flex; gap: 6px; margin-bottom: 14px; }
+  .sw { width: 26px; height: 26px; border: 2px solid #000; cursor: pointer; }
+  .sw.on { outline: 3px solid #fff; }
+  .help { margin-top: 12px; font-size: 8px; line-height: 2; color: #e8e8e8; text-align: center; text-shadow: 2px 2px 0 #333; max-width: 92vw; }
+  .help b { color: #ffff60; font-weight: normal; }
+  .dim { background: rgba(16,10,6,0.62); overflow-y: auto; }
+  .screen h2 { font-weight: normal; font-size: 22px; margin: 0 0 22px; text-shadow: 3px 3px 0 #3f3f3f; }
+  #resStats { font-size: 11px; line-height: 2.3; text-align: center; margin-bottom: 18px; text-shadow: 2px 2px 0 #222; }
+  #resStats b { color: #aef58f; font-weight: normal; }
+
+  #loading { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 18px; font-size: 14px; background: #1c2230; text-shadow: 2px 2px 0 #000; }
+  #loadbar { width: 300px; height: 8px; background: #555; border: 2px solid #000; }
+  #loadbar div { height: 100%; width: 30%; background: #ffd23f; animation: lb 1s ease-in-out infinite alternate; }
+  @keyframes lb { from { width: 10%; } to { width: 100%; } }
+
+  /* ---------- HUD ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #topleft { position: absolute; left: 18px; top: 16px; text-shadow: 3px 3px 0 #3f3f3f; }
+  #cash { font-size: 22px; color: #aef58f; }
+  #cash.neg { color: #ff7a7a; }
+  #clock { font-size: 12px; margin-top: 10px; color: #fff; }
+  #mission { margin-top: 14px; font-size: 9px; line-height: 1.9; max-width: 340px; text-shadow: 2px 2px 0 #333; }
+  #mission .t { color: #ffff60; } #mission .d { color: #9fd8ff; }
+  #mbar { width: 220px; height: 6px; background: rgba(0,0,0,0.45); border: 2px solid #000; margin-top: 6px; }
+  #mbarFill { height: 100%; width: 0; background: #ffd23f; }
+  #topright { position: absolute; right: 16px; top: 14px; text-align: right; text-shadow: 2px 2px 0 #3f3f3f; }
+  #map { width: 176px; height: 176px; border: 3px solid rgba(0,0,0,0.6); background: #111; image-rendering: pixelated; border-radius: 50%; }
+  #arrowWrap { position: absolute; right: 16px; top: 202px; width: 176px; text-align: center; font-size: 9px; line-height: 1.9; text-shadow: 2px 2px 0 #333; }
+  #arrow { display: inline-block; font-size: 30px; color: #ffd23f; transition: transform 0.05s linear; text-shadow: 2px 2px 0 #3f3000; }
+  #bottomleft { position: absolute; left: 18px; bottom: 18px; font-size: 9px; line-height: 2.2; text-shadow: 2px 2px 0 #3f3f3f; }
+  #dmgbar { width: 150px; height: 8px; background: rgba(0,0,0,0.5); border: 2px solid #000; }
+  #dmgFill { height: 100%; width: 0; background: #ff5a3c; }
+  #bottomright { position: absolute; right: 18px; bottom: 18px; text-align: right; }
+  #gauge { display: flex; align-items: flex-end; gap: 14px; justify-content: flex-end; text-shadow: 3px 3px 0 #3f3f3f; }
+  #spd { font-size: 54px; line-height: 1; }
+  #spd small { font-size: 12px; color: #ddd; }
+  #gear { font-size: 26px; color: #ffd23f; width: 36px; text-align: center; border: 3px solid #fff; padding: 6px 0; background: rgba(0,0,0,0.35); }
+  #limit { width: 52px; height: 52px; border-radius: 50%; background: #fff; border: 6px solid #d62828; color: #111; font-size: 14px; display: flex; align-items: center; justify-content: center; text-shadow: none; }
+  #limit.over { animation: blink 0.4s steps(2) infinite; }
+  #rpm { width: 250px; height: 10px; background: rgba(0,0,0,0.5); border: 2px solid #000; margin: 8px 0 0 auto; position: relative; }
+  #rpmFill { height: 100%; width: 0; background: linear-gradient(90deg, #5dbb1f, #ffd23f 70%, #ff3c2a); }
+  #lights { font-size: 8px; color: #7fd0ff; margin-top: 8px; }
+
+  #title { position: absolute; left: 0; right: 0; top: 24%; text-align: center; transition: opacity 0.25s; }
+  #tMain { font-size: clamp(22px, 5vw, 50px); text-shadow: 4px 4px 0 #3f3f3f; }
+  #tSub { font-size: clamp(9px, 1.6vw, 14px); margin-top: 14px; color: #ffff60; text-shadow: 2px 2px 0 #3f3f00; }
+  #flash { position: absolute; inset: 0; background: #ff2a00; opacity: 0; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  #toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: 130px; font-size: 11px; text-align: center; line-height: 2.2; text-shadow: 2px 2px 0 #3f3f3f; }
+  #toast div { animation: toast 2.8s forwards; }
+  @keyframes toast { 0% { opacity: 0; transform: translateY(14px); } 10%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  #hold { position: absolute; left: 50%; top: 56%; transform: translateX(-50%); width: 200px; font-size: 9px; text-align: center; text-shadow: 2px 2px 0 #333; }
+  #holdBar { height: 8px; background: rgba(0,0,0,0.5); border: 2px solid #000; margin-top: 6px; }
+  #holdFill { height: 100%; width: 0; background: #7bff5a; }
+
+  #touch { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+  #touch button { pointer-events: auto; position: absolute; bottom: 22px; width: 78px; height: 78px; font-family: inherit; font-size: 10px; color: #fff;
+    background: rgba(112,112,112,0.55); border: 3px solid rgba(0,0,0,0.7); box-shadow: inset 2px 2px 0 rgba(255,255,255,0.35), inset -2px -3px 0 rgba(0,0,0,0.35); text-shadow: 2px 2px 0 #333; touch-action: none; }
+  #touch button.on { background: rgba(123,132,199,0.8); }
+  #tLeft { left: 14px; } #tRight { left: 100px; } #tGas { right: 14px; height: 100px !important; } #tBrake { right: 100px; } #tHand { right: 186px; }
+  #tPause { top: 12px; bottom: auto !important; left: 50%; transform: translateX(-50%); width: 50px !important; height: 36px !important; font-size: 9px !important; }
+  body.touch #bottomright { bottom: 130px; } body.touch #bottomleft { bottom: 130px; }
+  @media (max-width: 760px) { #map { width: 120px; height: 120px; } #arrowWrap { top: 144px; width: 120px; } #spd { font-size: 34px; } #mission { max-width: 200px; } .help { display: none; } }
+  @media (max-height: 560px) {
+    #menu { justify-content: flex-start; overflow-y: auto; padding: 8px 0 12px; }
+    .logo { font-size: 26px; margin-bottom: 6px; letter-spacing: 2px; text-shadow: 0 3px 0 #5a5a5a, 0 6px 0 #2b2b2b; }
+    .logo span { text-shadow: 0 3px 0 #8a5f08, 0 6px 0 #4a3004; }
+    .label { margin: 2px 0 4px; } .car { width: 112px; padding: 5px 3px; } #cars { margin-bottom: 4px; } #colors { margin-bottom: 6px; }
+    .mc-btn { padding: 8px 6px; margin: 3px auto; } .row .mc-btn { padding: 8px 4px; margin: 3px 0; } .help { display: none; }
+    #touch button { width: 64px; height: 64px; bottom: 14px; } #tGas { height: 84px !important; } #tRight { left: 84px; } #tBrake { right: 84px; } #tHand { right: 154px; }
+    #bottomright { bottom: 90px; } #bottomleft { bottom: 90px; } #spd { font-size: 30px; } #rpm { width: 180px; }
+    #map { width: 110px; height: 110px; } #arrowWrap { top: 136px; width: 110px; } #cash { font-size: 16px; } #mission { font-size: 8px; max-width: 220px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="loading"><div>Building the city</div><div id="loadbar"><div></div></div><div style="font-size:9px;color:#aaa">Stacking skyscrapers...</div></div>
+
+<div id="hud" class="hidden">
+  <div id="topleft">
+    <div id="cash">$0</div>
+    <div id="clock">08:00</div>
+    <div id="mission"></div>
+  </div>
+  <div id="topright"><canvas id="map" width="176" height="176"></canvas></div>
+  <div id="arrowWrap" class="hidden"><div id="arrow">&#9650;</div><div id="dist"></div></div>
+  <div id="bottomleft">
+    <div>DAMAGE</div><div id="dmgbar"><div id="dmgFill"></div></div>
+    <div id="camName" style="color:#ccc;margin-top:6px">CHASE CAM</div>
+  </div>
+  <div id="bottomright">
+    <div id="gauge"><div id="limit">60</div><div id="spd">0<small> km/h</small></div><div id="gear">N</div></div>
+    <div id="rpm"><div id="rpmFill"></div></div>
+    <div id="lights"></div>
+  </div>
+  <div id="title"><div id="tMain"></div><div id="tSub"></div></div>
+  <div id="hold" class="hidden"><div id="holdTxt">Hold still...</div><div id="holdBar"><div id="holdFill"></div></div></div>
+  <div id="toast"></div>
+  <div id="flash"></div>
+</div>
+
+<div id="touch" class="hidden">
+  <button id="tLeft" data-k="left">&#9664;</button>
+  <button id="tRight" data-k="right">&#9654;</button>
+  <button id="tHand" data-k="hand">HAND</button>
+  <button id="tBrake" data-k="brake">BRAKE</button>
+  <button id="tGas" data-k="gas">GAS</button>
+  <button id="tPause" data-k="pause">II</button>
+</div>
+
+<div id="menu" class="screen hidden">
+  <div class="logo">BLOCK <span>CITY</span><br>DRIVE</div>
+  <div class="label">Pick your ride</div>
+  <div id="cars"></div>
+  <div id="colors"></div>
+  <button class="mc-btn" id="btnStart">Start Driving</button>
+  <div class="row">
+    <button class="mc-btn" id="btnMode">Mode: Free Drive</button>
+    <button class="mc-btn" id="btnTime">Time: Cycle</button>
+  </div>
+  <div class="row">
+    <button class="mc-btn" id="btnTraffic">Traffic: Normal</button>
+    <button class="mc-btn" id="btnShadow">Shadows: ON</button>
+  </div>
+  <button class="mc-btn" id="btnSound" style="font-size:10px">Sound: ON</button>
+  <div class="help">
+    <b>W/&#8593;</b> gas &nbsp; <b>S/&#8595;</b> brake / reverse &nbsp; <b>A D/&#8592; &#8594;</b> steer &nbsp; <b>SPACE</b> handbrake &nbsp; <b>H</b> horn<br>
+    <b>C</b> camera &nbsp; <b>L</b> headlights &nbsp; <b>N</b> time of day &nbsp; <b>R</b> reset onto road &nbsp; <b>ESC</b> pause<br>
+    Taxi Shift: stop on the blue marker to pick up, drive to the green one. Obey the lights and the speed limit or pay fines.
+  </div>
+</div>
+
+<div id="pause" class="screen dim hidden">
+  <h2>Game Paused</h2>
+  <button class="mc-btn" id="btnResume">Back to the Road</button>
+  <button class="mc-btn" id="btnEnd">End Shift</button>
+  <button class="mc-btn" id="btnQuit">Quit to Title</button>
+</div>
+
+<div id="results" class="screen dim hidden">
+  <h2>Shift Over</h2>
+  <div id="resStats"></div>
+  <button class="mc-btn" id="btnAgain">Drive Again</button>
+  <button class="mc-btn" id="btnTitle">Title Screen</button>
+</div>
+
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
