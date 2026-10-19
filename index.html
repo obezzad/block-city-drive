@@ -45,6 +45,7 @@
   .sw.on { outline: 3px solid #fff; }
   .help { margin-top: 12px; font-size: 8px; line-height: 2; color: #e8e8e8; text-align: center; text-shadow: 2px 2px 0 #333; max-width: 92vw; }
   .help b { color: #ffff60; font-weight: normal; }
+  .ver { position: fixed; left: 10px; bottom: 8px; font-size: 8px; color: #eee; text-shadow: 1px 1px 0 #333; z-index: 11; pointer-events: none; }
   .dim { background: rgba(16,10,6,0.62); overflow-y: auto; }
   .screen h2 { font-weight: normal; font-size: 22px; margin: 0 0 22px; text-shadow: 3px 3px 0 #3f3f3f; }
   #resStats { font-size: 11px; line-height: 2.3; text-align: center; margin-bottom: 18px; text-shadow: 2px 2px 0 #222; }
@@ -118,6 +119,7 @@
 <body>
 <canvas id="c"></canvas>
 
+<div class="ver"></div>
 <div id="loading"><div>Building the city</div><div id="loadbar"><div></div></div><div style="font-size:9px;color:#aaa">Stacking skyscrapers...</div></div>
 
 <div id="hud" class="hidden">

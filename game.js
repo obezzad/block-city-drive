@@ -20,6 +20,8 @@ const wrapA = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) 
 const isTouch = matchMedia('(pointer: coarse)').matches;
 const $ = id => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
+const VERSION = 'v1.3.0 \u00b7 2026-10-19';
+document.querySelectorAll('.ver').forEach(e => { e.textContent = VERSION; });
 
 // ---------- settings ----------
 const COLORS = ['#d62828', '#2a6fdb', '#2fa84f', '#f2c01e', '#f2f2f2', '#2b2b2b', '#ff7a1a', '#8a3fd1'];
