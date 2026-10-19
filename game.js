@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 
+function showErr(m) { let d = document.getElementById('errbox'); if (!d) { d = document.createElement('pre'); d.id = 'errbox'; d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:40%;overflow:auto;margin:0;padding:8px;z-index:99;background:rgba(120,0,0,.9);color:#fff;font:11px monospace;white-space:pre-wrap'; document.body.appendChild(d); } d.textContent += m + '\n'; }
+addEventListener('error', e => showErr('ERR ' + e.message + ' @' + (e.lineno || '')));
+addEventListener('unhandledrejection', e => showErr('REJ ' + (e.reason && e.reason.message || e.reason)));
+
 // =====================================================================
 //  BLOCK CITY DRIVE — a blocky open-city driving simulator
 // =====================================================================
@@ -27,13 +31,13 @@ const CARS = {
 const MODES = [['free', 'Free Drive'], ['taxi', 'Taxi Shift']];
 const TIMES = [['cycle', 'Cycle'], ['morning', 'Morning'], ['sunset', 'Sunset'], ['night', 'Night']];
 const TRAFFIC = [['Light', 22], ['Normal', 42], ['Heavy', 66]];
-const SET = Object.assign({ car: 'hatch', color: 0, mode: 'free', time: 'cycle', traffic: 1, shadow: true, sound: true }, (() => { try { return JSON.parse(localStorage.getItem('blockcity.v1')) || {}; } catch { return {}; } })());
+const SET = Object.assign({ car: 'hatch', color: 0, mode: 'free', time: 'cycle', traffic: isTouch ? 0 : 1, shadow: !isTouch, sound: true }, (() => { try { return JSON.parse(localStorage.getItem('blockcity.v2')) || {}; } catch { return {}; } })());
 if (Q.get('car')) SET.car = Q.get('car');
 if (Q.get('mode')) SET.mode = Q.get('mode');
 if (Q.get('time')) SET.time = Q.get('time');
 if (!CARS[SET.car]) SET.car = 'hatch';
 SET.traffic = clamp(SET.traffic | 0, 0, 2); SET.color = clamp(SET.color | 0, 0, 7);
-const saveSet = () => { try { localStorage.setItem('blockcity.v1', JSON.stringify(SET)); } catch {} };
+const saveSet = () => { try { localStorage.setItem('blockcity.v2', JSON.stringify(SET)); } catch {} };
 
 // ---------- pixel textures ----------
 function makeCanvas(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); draw(g, w, h); return c; }
@@ -91,7 +95,7 @@ const TEX = {
 // ---------- renderer / scene ----------
 const canvas = $('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, isTouch ? 1.25 : 1.5));
+renderer.setPixelRatio(isTouch ? 1 : Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = SET.shadow;
 const scene = new THREE.Scene();
@@ -101,7 +105,7 @@ const camera = new THREE.PerspectiveCamera(64, innerWidth / innerHeight, 0.3, 16
 const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8a78, 1.4);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff4e0, 1.9);
-sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+sun.castShadow = true; sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -75, right: 75, top: 75, bottom: -75, near: 10, far: 420 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.35;
 scene.add(sun, sun.target);
@@ -713,7 +717,7 @@ addEventListener('keydown', e => {
   } else if (G.state === 'pause' && (e.code === 'Escape' || e.code === 'KeyP')) pause(false);
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (G.state === 'play') pause(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { for (const k in keys) keys[k] = false; if (G.state === 'play') pause(true); } });
 document.querySelectorAll('#touch button').forEach(b => {
   const k = b.dataset.k;
   const on = e => { e.preventDefault(); if (k === 'pause') { pause(true); return; } touch[k] = true; b.classList.add('on'); };
@@ -1019,7 +1023,7 @@ function showMenu() {
   setTime(SET.time); setTrafficCount(TRAFFIC[SET.traffic][1]); Snd.skid(0); Snd.engine(0, 0, false); Snd.horn(false);
 }
 function start() {
-  if (isTouch) { const r = document.documentElement; (r.requestFullscreen ? r.requestFullscreen() : Promise.reject()).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch {} }
+  if (isTouch) setTimeout(() => { try { const r = document.documentElement; (r.requestFullscreen ? r.requestFullscreen() : Promise.reject()).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch {} }, 600);
   Snd.init(); if (Snd.ctx) Snd.ctx.resume();
   showScreen(null); $('hud').classList.remove('hidden'); if (isTouch) $('touch').classList.remove('hidden');
   placeOnRoad(SPAWN.x + 10.6 - LANE, SPAWN.z, 0); P.vx = P.vz = 0; P.dmg = 0; P.dist = 0; P.top = 0; P.steer = 0; P.lightsMode = 0; G.camMode = 0; G.camA = P.th; $('camName').textContent = 'CHASE CAM';
